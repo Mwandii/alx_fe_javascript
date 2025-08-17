@@ -59,3 +59,48 @@ function showRandomQuote() {
 }
 
 showRandomQuote();
+
+function exportToJsonFile() {
+    // Convert quotes array to a JSON string
+    const jsonData = JSON.stringify(quotes, null, 2);
+
+    // Create a Blob (like a file in memory)
+    const blob = new Blob([jsonData], { type: "application/json" });
+
+    // Create a temporary download link
+    const url = URL.createObjectURL(blob);
+
+    // Create <a> element for downloading
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "quotes.json"; // file name
+    a.click();
+
+    // Free memory
+    URL.revokeObjectURL(url);
+}
+
+function importFromJsonFile(event) {
+    const fileReader = new FileReader(); // Create a FileReader to read the file
+
+    // This runs after the file is fully read
+    fileReader.onload = function(e) {
+        try {
+            // Convert JSON text into JavaScript array
+            const importedQuotes = JSON.parse(e.target.result);
+
+            // Merge imported quotes into existing quotes array
+            quotes.push(...importedQuotes);
+
+            // Save to localStorage so quotes persist
+            localStorage.setItem("quotes", JSON.stringify(quotes));
+
+            alert('Quotes imported successfully!');
+        } catch (err) {
+            alert('Error importing file: ' + err);
+        }
+    };
+
+    // Start reading the selected file as text
+    fileReader.readAsText(event.target.files[0]);
+}
