@@ -150,48 +150,65 @@ if (lastCategory) {
     filterQuotes();
 }
 
-const SERVER_URL = 'https://jsonplaceholder.typicode.com/posts';
+const MOCK_API_URL = 'https://jsonplaceholder.typicode.com/posts';
 
-// Function to fetch quotes from server
-async function fetchServerQuotes() {
+// Function to fetch quotes from the server
+async function fetchQuotesFromServer() {
     try {
-        const response = await fetch(SERVER_URL);
+        const response = await fetch(MOCK_API_URL);
         const serverData = await response.json();
 
-        // Convert server data to match our quotes format (text & category)
+        // Map server data to your quotes format
         const serverQuotes = serverData.slice(0, 5).map(item => ({
             text: item.title,
-            category: item.body.split(' ')[0] || 'general' // simple mapping
+            category: item.body.split(' ')[0] || 'general'
         }));
 
-        // Sync server quotes with local quotes
-        syncWithServer(serverQuotes);
+        // Call syncQuotes to merge server data
+        syncQuotes(serverQuotes);
     } catch (err) {
-        console.error('Error fetching server quotes:', err);
+        console.error('Error fetching quotes from server:', err);
     }
 }
 
-// Conflict resolution & merging server data
-function syncWithServer(serverQuotes) {
+// Function to sync server quotes with local quotes and resolve conflicts
+function syncQuotes(serverQuotes) {
     let updated = false;
 
     serverQuotes.forEach(sq => {
+        // Check if the quote already exists locally
         const exists = quotes.some(lq => lq.text === sq.text && lq.category === sq.category);
+
+        // If not, add it (server data takes precedence)
         if (!exists) {
-            quotes.push(sq); // server data takes precedence
+            quotes.push(sq);
             updated = true;
         }
     });
 
     if (updated) {
         localStorage.setItem('quotes', JSON.stringify(quotes));
-        populateCategories(); // update dropdown
+        populateCategories(); // update category dropdown
         filterQuotes();       // refresh displayed quotes
-        showNotification('Quotes have been synced with server!');
+        showNotification('Quotes updated from server!');
     }
 }
 
-// Simple notification UI
+// Function to simulate posting new quotes to the server
+async function postQuoteToServer(quote) {
+    try {
+        await fetch(MOCK_API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(quote)
+        });
+        console.log('Quote posted to server:', quote);
+    } catch (err) {
+        console.error('Error posting quote to server:', err);
+    }
+}
+
+// Notification helper
 function showNotification(message) {
     let notification = document.getElementById('serverNotification');
     if (!notification) {
@@ -209,13 +226,11 @@ function showNotification(message) {
     }
 
     notification.textContent = message;
-    setTimeout(() => {
-        notification.remove();
-    }, 4000);
+    setTimeout(() => notification.remove(), 4000);
 }
 
-// Start periodic server sync (every 30 seconds)
-setInterval(fetchServerQuotes, 30000);
+// Periodically fetch new quotes from server every 30 seconds
+setInterval(fetchQuotesFromServer, 30000);
 
-// Optional: Fetch once when page loads
-fetchServerQuotes();
+// Optional: fetch once when page loads
+fetchQuotesFromServer();
