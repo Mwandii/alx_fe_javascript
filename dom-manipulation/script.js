@@ -149,3 +149,73 @@ if (lastCategory) {
     document.getElementById('categoryFilter').value = lastCategory;
     filterQuotes();
 }
+
+const SERVER_URL = 'https://jsonplaceholder.typicode.com/posts';
+
+// Function to fetch quotes from server
+async function fetchServerQuotes() {
+    try {
+        const response = await fetch(SERVER_URL);
+        const serverData = await response.json();
+
+        // Convert server data to match our quotes format (text & category)
+        const serverQuotes = serverData.slice(0, 5).map(item => ({
+            text: item.title,
+            category: item.body.split(' ')[0] || 'general' // simple mapping
+        }));
+
+        // Sync server quotes with local quotes
+        syncWithServer(serverQuotes);
+    } catch (err) {
+        console.error('Error fetching server quotes:', err);
+    }
+}
+
+// Conflict resolution & merging server data
+function syncWithServer(serverQuotes) {
+    let updated = false;
+
+    serverQuotes.forEach(sq => {
+        const exists = quotes.some(lq => lq.text === sq.text && lq.category === sq.category);
+        if (!exists) {
+            quotes.push(sq); // server data takes precedence
+            updated = true;
+        }
+    });
+
+    if (updated) {
+        localStorage.setItem('quotes', JSON.stringify(quotes));
+        populateCategories(); // update dropdown
+        filterQuotes();       // refresh displayed quotes
+        showNotification('Quotes have been synced with server!');
+    }
+}
+
+// Simple notification UI
+function showNotification(message) {
+    let notification = document.getElementById('serverNotification');
+    if (!notification) {
+        notification = document.createElement('div');
+        notification.id = 'serverNotification';
+        notification.style.position = 'fixed';
+        notification.style.top = '10px';
+        notification.style.right = '10px';
+        notification.style.backgroundColor = '#4caf50';
+        notification.style.color = 'white';
+        notification.style.padding = '10px';
+        notification.style.borderRadius = '5px';
+        notification.style.zIndex = '1000';
+        document.body.appendChild(notification);
+    }
+
+    notification.textContent = message;
+    setTimeout(() => {
+        notification.remove();
+    }, 4000);
+}
+
+// Start periodic server sync (every 30 seconds)
+setInterval(fetchServerQuotes, 30000);
+
+// Optional: Fetch once when page loads
+fetchServerQuotes();
