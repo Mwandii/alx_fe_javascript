@@ -190,7 +190,7 @@ function syncQuotes(serverQuotes) {
         localStorage.setItem('quotes', JSON.stringify(quotes));
         populateCategories(); // update category dropdown
         filterQuotes();       // refresh displayed quotes
-        showNotification('Quotes updated from server!');
+        showNotification('Quotes synced with server!');
     }
 }
 
